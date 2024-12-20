@@ -50,7 +50,12 @@ class DatabaseConnector(QWidget):
                 'password': self.password_input.text()
             }
             # You would implement the actual connection here
-            # vp.connect(**conn_info)
+            vp.new_connection(
+                conn_info,
+                # name = name.value if name.value else "VerticaDSN",
+                auto = True,
+                overwrite = True,
+            )
             QMessageBox.information(self, "Success", "Connected to database successfully!")
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Failed to connect: {str(e)}")
