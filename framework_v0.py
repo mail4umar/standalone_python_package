@@ -46,7 +46,7 @@ class DatabaseConnector(QWidget):
                 'host': self.host_input.text(),
                 'port': self.port_input.text(),
                 'database': self.database_input.text(),
-                'username': self.username_input.text(),
+                'user': self.username_input.text(),
                 'password': self.password_input.text()
             }
             # You would implement the actual connection here
