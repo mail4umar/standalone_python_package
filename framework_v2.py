@@ -6,6 +6,17 @@ from PyQt6.QtCore import Qt
 from PyQt6.QtWebEngineWidgets import QWebEngineView
 import verticapy as vp
 
+# Monkey patch to prevent vertica_highcharts import issues
+try:
+    import vertica_highcharts
+except ImportError:
+    sys.modules['vertica_highcharts'] = None
+    sys.modules['vertica_highcharts.Highstock'] = None
+    sys.modules['vertica_highcharts.Highchart'] = None
+except ValueError:  # Handle improper installation issues
+    sys.modules['vertica_highcharts'] = None
+    sys.modules['vertica_highcharts.Highstock'] = None
+    sys.modules['vertica_highcharts.Highchart'] = None
 class ConnectionWidget(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
