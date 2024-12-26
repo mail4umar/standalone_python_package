@@ -1,26 +1,27 @@
 # framework_v2.spec
+import os
+from PyInstaller.utils.hooks import collect_data_files, collect_submodules
+
+# Collect all vertica_highcharts related files
+highcharts_data = collect_data_files('vertica_highcharts')
+highcharts_imports = collect_submodules('vertica_highcharts')
+
 a = Analysis(
     ['framework_v2.py'],
     pathex=['.'],
     binaries=[],
-    # datas=[
-    #     ('C:\\Users\\ughumman\\AppData\\Local\\anaconda3\\envs\\app\\Lib\\site-packages\\vertica_highcharts\\highcharts\\templates', 'vertica_highcharts/highcharts/templates'),
-    # ],
-    data = [],
-    # hiddenimports=['verticapy', 'PyQt6', 'PyQt6.QtWebEngineWidgets', 'vertica_highcharts', 'vertica_highcharts.highcharts'],
-    hiddenimports=['verticapy', 'PyQt6', 'PyQt6.QtWebEngineWidgets'],
-    excludes=['vertica_highcharts'],
+    datas=highcharts_data,
+    hiddenimports=[
+        'verticapy',
+        'PyQt6',
+        'PyQt6.QtWebEngineWidgets',
+        'vertica_highcharts',
+        'vertica_highcharts.highcharts',
+        *highcharts_imports
+    ],
     cipher=None
 )
-# from PyInstaller.utils.crypto import generate_key
-# a = Analysis(
-#     ['framework_v2.py'],
-#     pathex=['.'],
-#     binaries=[],
-#     datas=[],
-#     hiddenimports=['verticapy', 'PyQt6', 'PyQt6.QtWebEngineWidgets'],
-#     cipher=generate_key()
-# )
+
 pyz = PYZ(a.pure, a.zipped_data)
 
 exe = EXE(
@@ -35,6 +36,6 @@ exe = EXE(
     strip=False,
     upx=True,
     runtime_tmpdir=None,
-    console=False,
+    console=True,  # Set to True temporarily for debugging
     onefile=True
 )
