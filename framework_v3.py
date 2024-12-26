@@ -1,11 +1,11 @@
 import sys
 from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, 
                            QHBoxLayout, QLineEdit, QPushButton, QLabel, 
-                           QMessageBox, QTextEdit, QStackedWidget)
+                           QMessageBox, QTabWidget, QStackedWidget)
 from PyQt6.QtCore import Qt
 from PyQt6.QtWebEngineWidgets import QWebEngineView
 import verticapy as vp
-
+from verticapy.performance.vertica import QueryProfiler
 
 class ConnectionWidget(QWidget):
     def __init__(self, parent=None):
@@ -15,12 +15,9 @@ class ConnectionWidget(QWidget):
         
     def setup_ui(self):
         layout = QVBoxLayout()
-        
-        # Create form layout with styled widgets
         form_widget = QWidget()
         form_layout = QVBoxLayout()
         
-        # Style for input fields
         input_style = """
             QLineEdit {
                 padding: 8px;
@@ -34,7 +31,6 @@ class ConnectionWidget(QWidget):
             }
         """
         
-        # Connection fields
         self.host_input = QLineEdit()
         self.host_input.setPlaceholderText("Host")
         self.host_input.setStyleSheet(input_style)
@@ -56,13 +52,11 @@ class ConnectionWidget(QWidget):
         self.password_input.setEchoMode(QLineEdit.EchoMode.Password)
         self.password_input.setStyleSheet(input_style)
         
-        # Add fields to form layout
         for widget in [self.host_input, self.port_input, self.database_input, 
                       self.username_input, self.password_input]:
             form_layout.addWidget(widget)
             form_layout.addSpacing(10)
             
-        # Connect button with styling
         self.connect_button = QPushButton("Connect to Database")
         self.connect_button.setStyleSheet("""
             QPushButton {
@@ -84,7 +78,6 @@ class ConnectionWidget(QWidget):
         form_layout.addWidget(self.connect_button)
         form_widget.setLayout(form_layout)
         
-        # Center the form
         main_layout = QHBoxLayout()
         main_layout.addStretch()
         main_layout.addWidget(form_widget)
@@ -95,8 +88,6 @@ class ConnectionWidget(QWidget):
         layout.addStretch()
         
         self.setLayout(layout)
-        
-        # Connect button signal
         self.connect_button.clicked.connect(self.try_connection)
         
     def try_connection(self):
@@ -219,29 +210,123 @@ class TableViewerWidget(QWidget):
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Failed to display table: {str(e)}")
 
+
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setup_ui()
         
     def setup_ui(self):
-        self.setWindowTitle("Vertica Table Viewer")
-        self.setMinimumSize(800, 600)
+        self.setWindowTitle("Vertica Database Viewer")
+        self.setMinimumSize(1000, 700)
         
-        # Create stacked widget to manage different screens
         self.stacked_widget = QStackedWidget()
-        
-        # Create and add widgets
         self.connection_widget = ConnectionWidget(self)
+        
+        self.tab_widget = QTabWidget()
         self.table_viewer_widget = TableViewerWidget(self)
+        self.query_plan_widget = QueryPlanWidget(self)
+        
+        self.tab_widget.addTab(self.table_viewer_widget, "Table View")
+        self.tab_widget.addTab(self.query_plan_widget, "Query Plan")
         
         self.stacked_widget.addWidget(self.connection_widget)
-        self.stacked_widget.addWidget(self.table_viewer_widget)
+        self.stacked_widget.addWidget(self.tab_widget)
         
         self.setCentralWidget(self.stacked_widget)
         
     def show_table_viewer(self):
-        self.stacked_widget.setCurrentWidget(self.table_viewer_widget)
+        self.stacked_widget.setCurrentWidget(self.tab_widget)
+
+class QueryPlanWidget(QWidget):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setup_ui()
+        
+    def setup_ui(self):
+        layout = QVBoxLayout()
+        
+        input_layout = QHBoxLayout()
+        self.schema_input = QLineEdit()
+        self.schema_input.setPlaceholderText("Enter schema name")
+        self.schema_input.setStyleSheet("""
+            QLineEdit {
+                padding: 8px;
+                border: 1px solid #ccc;
+                border-radius: 4px;
+                background-color: white;
+                min-width: 300px;
+            }
+        """)
+        
+        self.key_input = QLineEdit()
+        self.key_input.setPlaceholderText("Enter key")
+        self.key_input.setStyleSheet("""
+            QLineEdit {
+                padding: 8px;
+                border: 1px solid #ccc;
+                border-radius: 4px;
+                background-color: white;
+                min-width: 300px;
+            }
+        """)
+        
+        self.view_button = QPushButton("View Query Plan")
+        self.view_button.setStyleSheet("""
+            QPushButton {
+                background-color: #4a90e2;
+                color: white;
+                padding: 8px 15px;
+                border: none;
+                border-radius: 4px;
+            }
+            QPushButton:hover {
+                background-color: #357abd;
+            }
+        """)
+        
+        input_layout.addWidget(self.schema_input)
+        input_layout.addWidget(self.key_input)
+        input_layout.addWidget(self.view_button)
+        
+        self.web_view = QWebEngineView()
+        self.web_view.setMinimumHeight(400)
+        
+        layout.addLayout(input_layout)
+        layout.addWidget(self.web_view)
+        
+        self.setLayout(layout)
+        self.view_button.clicked.connect(self.display_plan)
+        
+    def display_plan(self):
+        try:
+            schema = self.schema_input.text()
+            key = self.key_input.text()
+            
+            if not schema or not key:
+                raise ValueError("Please enter both schema and key")
+                
+            qprof = QueryProfiler(target_schema=schema, key_id=key, check_tables=False)
+            res = qprof.get_qplan_tree()
+            html_content = res._repr_html_()
+            
+            styled_html = f"""
+                <html>
+                <head>
+                    <style>
+                        body {{ font-family: Arial, sans-serif; padding: 20px; }}
+                    </style>
+                </head>
+                <body>
+                    {html_content}
+                </body>
+                </html>
+            """
+            
+            self.web_view.setHtml(styled_html)
+            
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Failed to display query plan: {str(e)}")
 
 def main():
     app = QApplication(sys.argv)
