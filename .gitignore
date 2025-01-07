@@ -1,0 +1,3 @@
+# Ignore everything inside the build and dist folders
+build/
+dist/
