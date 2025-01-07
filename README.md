@@ -3,4 +3,4 @@ I am trying to make an application that has a GUI and it can be installable. The
 
 
 # to create the package
-pyinstaller --clean framework_v2.spec
+pyinstaller --clean vertica_viewer.spec
