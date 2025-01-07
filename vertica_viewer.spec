@@ -7,7 +7,7 @@ highcharts_data = collect_data_files('vertica_highcharts')
 highcharts_imports = collect_submodules('vertica_highcharts')
 
 a = Analysis(
-    ['framework_v2.py'],
+    ['framework_v3.py'],
     pathex=['.'],
     binaries=[],
     datas=highcharts_data,
